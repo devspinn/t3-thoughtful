@@ -5,8 +5,8 @@ import {
   type NextAuthOptions,
 } from "next-auth";
 import { type Adapter } from "next-auth/adapters";
-import DiscordProvider from "next-auth/providers/discord";
 import GoogleProvider from 'next-auth/providers/google';
+import CredentialsProvider from 'next-auth/providers/credentials';
 
 
 import { env } from "~/env";
@@ -39,6 +39,9 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authOptions: NextAuthOptions = {
+  // session: {
+  //   strategy: 'jwt',
+  // },
   callbacks: {
     session: ({ session, user }) => ({
       ...session,
@@ -54,19 +57,20 @@ export const authOptions: NextAuthOptions = {
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
     }),
-    // DiscordProvider({
-    //   clientId: env.DISCORD_CLIENT_ID,
-    //   clientSecret: env.DISCORD_CLIENT_SECRET,
-    // }),
-    /**
-     * ...add more providers here.
-     *
-     * Most other providers require a bit more work than the Discord provider. For example, the
-     * GitHub provider requires you to add the `refresh_token_expires_in` field to the Account
-     * model. Refer to the NextAuth.js docs for the provider you want to use. Example:
-     *
-     * @see https://next-auth.js.org/providers/github
-     */
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        username: { label: "Username", type: "text", placeholder: "devonspinnler" },
+        password: { label: "Password", type: "password", placeholder: "••••••••••" },
+      },
+      async authorize(credentials) {
+        const user = await db.user.findFirst({
+          // orderBy: { createdAt: "desc" }, // TODO: add createdAt
+          where: { email: credentials?.username },
+        });
+        return user;
+      },
+    }),
   ],
 };
 
